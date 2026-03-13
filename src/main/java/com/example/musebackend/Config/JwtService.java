@@ -6,6 +6,7 @@ import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Date;
@@ -17,18 +18,39 @@ public class JwtService {
     private static final String TOKEN_TYPE = "token_type";
     private final PrivateKey privateKey;
     private final PublicKey publicKey;
-    @Value("${jwt-access-token-expiration}")
-    private long accessTokenExpiration;
-    @Value("${jwt-refresh-token-expiration}")
-    private long refreshTokenExpiration;
+
+    private final long accessTokenExpiration;
+    private final long refreshTokenExpiration;
 
 
 
+    public JwtService(
+            @Value("${JWT_PRIVATE_KEY_CONTENT:}") String privateKeyEnv,
+            @Value("${JWT_PUBLIC_KEY_CONTENT:}") String publicKeyEnv,
+            @Value("${jwt-access-token-expiration}") long accessTokenExpiration,
+            @Value("${jwt-refresh-token-expiration}") long refreshTokenExpiration
+    ) throws Exception {
+        this.accessTokenExpiration = accessTokenExpiration;
+        this.refreshTokenExpiration = refreshTokenExpiration;
 
-    public JwtService()throws Exception{
-        this.privateKey = KeyUtils.loadPrivateKey("jwt_locals/private.pem");
-        this.publicKey = KeyUtils.loadPublicKey("jwt_locals/public.pem");
+        this.privateKey = resolveKey(true, "jwt_locals/private.pem", privateKeyEnv);
+        this.publicKey = resolveKey(false, "jwt_locals/public.pem", publicKeyEnv);
     }
+
+    private <T> T resolveKey(boolean isPrivate, String path, String env) throws Exception {
+        // 1. Try Environment Variable first (if provided)
+        if (env != null && !env.isBlank()) {
+            return isPrivate ? (T) KeyUtils.parsePrivateKey(env) : (T) KeyUtils.parsePublicKey(env);
+        }
+
+        // 2. Fallback to Classpath Resource
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream(path)) {
+            if (is == null) throw new Exception("Key not found in resources");
+            String content = new String(is.readAllBytes());
+            return isPrivate ? (T) KeyUtils.parsePrivateKey(content) : (T) KeyUtils.parsePublicKey(content);
+        }
+    }
+
     public String generateAccessToken(final String username){
         final Map<String , Object> claims = Map.of(TOKEN_TYPE, "ACCESS_TOKEN");
         return buildToken(username,claims,this.accessTokenExpiration);

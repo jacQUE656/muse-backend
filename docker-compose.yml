@@ -21,18 +21,17 @@ services:
       - mysql
     volumes:
       # Mount the secure Linux directory containing your PEM files
-      - /opt/secretes/muse-keys:/etc/ssl/jwt:ro
+      - /jwt_locals:/app/jwt_locals
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/musify
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/musify
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
-      - PRIVATE_KEY_PATH=/etc/ssl/jwt/private.pem
-      - PUBLIC_KEY_PATH=/etc/ssl/jwt/public.pem
       - CLOUDINARY_SECRETE=${CLOUDINARY_API_SECRET}
       - CLOUDINARY_KEY=${CLOUDINARY_API_KEY}
       - CLOUDINARY_NAME=${CLOUDINARY_NAMEE}
       - EMAIL_USERNAME=${EMAIL_UNAME}
       - EMAIL_PASSWORD=${EMAIL_PASS}
+      - JWT_KEYS_PATH=/jwt_locals/
     ports:
       - "80:2011"
 

@@ -1,6 +1,5 @@
 package com.example.musebackend.Config;
 
-import java.io.InputStream;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -10,33 +9,36 @@ import java.util.Base64;
 
 public class KeyUtils {
 
-    private KeyUtils(){}
+    private KeyUtils() {
+        // Private constructor to prevent instantiation
+    }
 
-    public static PrivateKey loadPrivateKey(final String pemPath )throws Exception{
-        final String key = readKeyFromResource(pemPath).replace("-----BEGIN PRIVATE KEY-----","")
-                .replace("-----END PRIVATE KEY-----","")
-                .replaceAll("\\s+","");
-        final byte[] decode = Base64.getDecoder().decode(key);
-        final PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decode);
+    /**
+     * Parses a raw PEM-formatted String into a PrivateKey.
+     * This method strips headers/footers and handles Base64 decoding.
+     */
+    public static PrivateKey parsePrivateKey(String keyContent) throws Exception {
+        String cleanKey = keyContent
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replaceAll("\\s+", ""); // Removes newlines and spaces
+
+        byte[] decoded = Base64.getDecoder().decode(cleanKey);
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decoded);
         return KeyFactory.getInstance("RSA").generatePrivate(spec);
     }
 
-    private static String readKeyFromResource(final String pemPath)throws Exception {
-        try(final InputStream is = KeyUtils.class.getClassLoader().getResourceAsStream(pemPath)){
-            if (is == null){
-                throw new IllegalArgumentException("Could not find key file"+pemPath);
-            }
-            return new String(is.readAllBytes());
-        }
-    }
+    /**
+     * Parses a raw PEM-formatted String into a PublicKey.
+     */
+    public static PublicKey parsePublicKey(String keyContent) throws Exception {
+        String cleanKey = keyContent
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replaceAll("\\s+", ""); // Removes newlines and spaces
 
-
-    public static PublicKey loadPublicKey(final String pemPath )throws Exception{
-        final String key = readKeyFromResource(pemPath).replace("-----BEGIN PUBLIC KEY-----","")
-                .replace("-----END PUBLIC KEY-----","")
-                .replaceAll("\\s+","");
-        final byte[] decode = Base64.getDecoder().decode(key);
-        final X509EncodedKeySpec spec = new X509EncodedKeySpec(decode);
+        byte[] decoded = Base64.getDecoder().decode(cleanKey);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(decoded);
         return KeyFactory.getInstance("RSA").generatePublic(spec);
     }
 }
