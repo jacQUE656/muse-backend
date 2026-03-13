@@ -1,0 +1,40 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: musify
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    expose:
+      - "3306"
+
+  muse-app:
+    build: .
+    container_name: muse-app
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    volumes:
+      # Mount the secure Linux directory containing your PEM files
+      - /opt/secretes/muse-keys:/etc/ssl/jwt:ro
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/musify
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - PRIVATE_KEY_PATH=/etc/ssl/jwt/private.pem
+      - PUBLIC_KEY_PATH=/etc/ssl/jwt/public.pem
+      - CLOUDINARY_SECRETE=${CLOUDINARY_API_SECRET}
+      - CLOUDINARY_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_NAME=${CLOUDINARY_NAMEE}
+      - EMAIL_USERNAME=${EMAIL_UNAME}
+      - EMAIL_PASSWORD=${EMAIL_PASS}
+    ports:
+      - "80:2011"
+
+volumes:
+  mysql_data:
