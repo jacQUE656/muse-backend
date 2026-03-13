@@ -15,7 +15,7 @@ public class PasswordResetEmailContext extends AbstractEmailContext{
         put("firstName", user.getFirstname());
         setTemplateLocation("mailing/reset-password");
         setSubject("Reset Password");
-        setFrom("jamestonibor65@gmail.com");
+        setFrom("jamestoibor65@gmail.com");
         setTo(user.getEmail());
     }
 

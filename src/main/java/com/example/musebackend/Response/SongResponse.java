@@ -2,6 +2,9 @@ package com.example.musebackend.Response;
 
 import lombok.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,4 +24,6 @@ public class SongResponse {
     private String file;
 
     private String duration;
+
+    private LocalDate dateAdded;
 }

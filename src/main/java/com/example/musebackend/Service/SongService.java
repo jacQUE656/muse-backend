@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +55,7 @@ public class SongService {
                .file(audioUploadResult.get("secure_url").toString())
                .duration(duration)
            .downloadCount(0)
+           .dateAdded(LocalDate.now())
                .build();
           return  songRepository.save(newSong);
     }
@@ -68,6 +71,7 @@ public class SongService {
                     .duration(song.getDuration())
                     .image(song.getImage())
                     .file(song.getFile())
+                    .dateAdded(song.getDateAdded())
                     .build())
             .toList();
 
@@ -84,6 +88,7 @@ public class SongService {
                         .duration(song.getDuration())
                         .image(song.getImage())
                         .file(song.getFile())
+                        .dateAdded(song.getDateAdded())
                         .build())
                 .orElseThrow(() -> new RuntimeException("Song not found with id: " + id));
 

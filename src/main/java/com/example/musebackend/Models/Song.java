@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,6 +35,8 @@ public class Song {
     private String duration;
 
     private int downloadCount;
+
+    private LocalDate dateAdded;
 
     @ManyToMany
     @Builder.Default
