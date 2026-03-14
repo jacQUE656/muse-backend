@@ -5,7 +5,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 public class AccountVerificationEmailContext extends AbstractEmailContext {
 
-    // Remove token field if not strictly needed; use the parent's map
     @Override
     public <T> void init(T context) {
         User user = (User) context;

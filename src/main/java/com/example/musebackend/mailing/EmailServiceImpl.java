@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
-import java.io.IOException;
 
 @Service
 public class EmailServiceImpl implements EmailService {
@@ -24,27 +23,31 @@ public class EmailServiceImpl implements EmailService {
     private SpringTemplateEngine templateEngine;
 
     @Override
-    public void sendMail(AbstractEmailContext email) throws IOException {
-        // 1. Process the Thymeleaf template
-        Context context = new Context();
-        context.setVariables(email.getContext());
-        String emailContent = templateEngine.process(email.getTemplateLocation(), context);
+    public void sendMail(AbstractEmailContext email) {
+        try {
+            Context context = new Context();
+            context.setVariables(email.getContext());
+            // If this line fails, your app crashes before sending!
+            String emailContent = templateEngine.process(email.getTemplateLocation(), context);
 
-        // 2. Build the SendGrid Mail object
-        Email from = new Email(email.getFrom());
-        Email to = new Email(email.getTo());
-        Content content = new Content("text/html", emailContent);
-        Mail mail = new Mail(from, email.getSubject(), to, content);
+            Email from = new Email(email.getFrom());
+            Email to = new Email(email.getTo());
+            Content content = new Content("text/html", emailContent);
+            Mail mail = new Mail(from, email.getSubject(), to, content);
 
-        // 3. Send via API
-        Request request = new Request();
-        request.setMethod(Method.POST);
-        request.setEndpoint("mail/send");
-        request.setBody(mail.build());
+            Request request = new Request();
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
 
-        Response response = sendGrid.api(request);
+            // This is where it hits the internet
+            Response response = sendGrid.api(request);
+            System.out.println("SendGrid Response Code: " + response.getStatusCode());
 
-        // Log status (202 Accepted indicates success)
-        System.out.println("Status Code: " + response.getStatusCode());
+        } catch (Exception e) {
+            // THIS IS THE MOST IMPORTANT PART
+            System.err.println("CRITICAL ERROR IN EMAIL SERVICE:");
+            e.printStackTrace();
+        }
     }
 }

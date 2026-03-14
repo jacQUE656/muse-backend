@@ -16,7 +16,6 @@ import com.example.musebackend.Service.Iservice.IUserService;
 import com.example.musebackend.mailing.AccountVerificationEmailContext;
 import com.example.musebackend.mailing.EmailService;
 import com.example.musebackend.mailing.PasswordResetEmailContext;
-import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Value;
@@ -78,7 +77,7 @@ public class UserService implements IUserService {
 
         try {
             emailService.sendMail(context);
-        }catch (MessagingException | IOException e){
+        }catch (IOException e){
             throw new RuntimeException("Registration successful ,  but email failed to send");
 
         }
@@ -102,11 +101,11 @@ public class UserService implements IUserService {
 
         try {
             emailService.sendMail(context);
-        }catch (MessagingException | IOException e){
-            throw new RuntimeException("Email failed to send");
-
+        }catch (IOException e) {
+            // THIS IS THE KEY: We need to see the SendGrid error in your logs
+            e.printStackTrace();
+            throw new RuntimeException("Email failed to send. Check logs for details: " + e.getMessage());
         }
-
 
     }
 
