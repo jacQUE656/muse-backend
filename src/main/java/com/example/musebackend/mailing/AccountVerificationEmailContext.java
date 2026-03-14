@@ -3,24 +3,19 @@ package com.example.musebackend.mailing;
 import com.example.musebackend.Models.User;
 import org.springframework.web.util.UriComponentsBuilder;
 
-
 public class AccountVerificationEmailContext extends AbstractEmailContext {
-    private String token;
 
-
+    // Remove token field if not strictly needed; use the parent's map
     @Override
     public <T> void init(T context) {
         User user = (User) context;
-
         put("firstName", user.getFirstname());
         setTemplateLocation("mailing/email-verification");
         setSubject("Complete Your Registration");
-        setFrom("jamestonibor65@gmail.com");
-        setTo(user.getEmail());
+
     }
 
     public void setToken(String token) {
-        this.token = token;
         put("token", token);
     }
 
@@ -32,5 +27,4 @@ public class AccountVerificationEmailContext extends AbstractEmailContext {
                 .toUriString();
         put("verificationURL", url);
     }
-
 }

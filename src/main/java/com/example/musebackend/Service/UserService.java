@@ -29,6 +29,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -77,7 +78,7 @@ public class UserService implements IUserService {
 
         try {
             emailService.sendMail(context);
-        }catch (MessagingException e){
+        }catch (MessagingException | IOException e){
             throw new RuntimeException("Registration successful ,  but email failed to send");
 
         }
@@ -101,7 +102,7 @@ public class UserService implements IUserService {
 
         try {
             emailService.sendMail(context);
-        }catch (MessagingException e){
+        }catch (MessagingException | IOException e){
             throw new RuntimeException("Email failed to send");
 
         }
