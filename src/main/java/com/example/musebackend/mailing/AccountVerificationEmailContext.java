@@ -1,13 +1,11 @@
 package com.example.musebackend.mailing;
 
 import com.example.musebackend.Models.User;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.util.UriComponentsBuilder;
 
 public class AccountVerificationEmailContext extends AbstractEmailContext {
 
-    @Value("${app.mail.from}")
-    private String senderEmail;
+
 
     @Override
     public <T> void init(T context) {
@@ -15,8 +13,6 @@ public class AccountVerificationEmailContext extends AbstractEmailContext {
         put("firstName", user.getFirstname());
         setTemplateLocation("mailing/email-verification");
         setSubject("Complete Your Registration");
-        setFrom(senderEmail);
-        setTo(user.getEmail());
 
     }
 

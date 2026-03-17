@@ -43,6 +43,17 @@ public class EmailServiceImpl implements EmailService {
             // This is where it hits the internet
             Response response = sendGrid.api(request);
             System.out.println("SendGrid Response Code: " + response.getStatusCode());
+            if (email.getFrom() == null || email.getTo() == null) {
+                System.err.println("ERROR: From [" + email.getFrom() + "] or To [" + email.getTo() + "] is NULL");
+                return;
+            }
+
+            if (response.getStatusCode() >= 400) {
+                System.err.println("SendGrid Rejected Request: " + response.getBody());
+            }
+            else {
+                System.out.println("Email sent successfully!");
+            }
 
         } catch (Exception e) {
             // THIS IS THE MOST IMPORTANT PART

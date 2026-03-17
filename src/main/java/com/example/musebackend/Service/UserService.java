@@ -47,6 +47,8 @@ public class UserService implements IUserService {
     private final EmailService emailService;
     @Value("${spring.mail.verify.host.frontend}")
     private String baseUrl;
+    @Value("${app.mail.from}")
+    private String senderEmail;
 
 
     private void checkUserEmail(String email) {
@@ -61,30 +63,39 @@ public class UserService implements IUserService {
             throw new BusinessException(ErrorCode.PHONE_ALREADY_EXISTS);
         }
     }
-    public void sendVerifyEMail(User user){
+    public void sendVerifyEMail(User user) {
+        // 1. Clean up any existing tokens for this user
         tokenRepository.deleteByUser(user);
+
+        // 2. Generate a fresh 6-character secure token
         String tokenValue = new String(Base64.encodeBase64URLSafe(DEFAULT_TOKEN_GENERATOR.generateKey()));
+
+        // 3. Create and save the VerificationToken entity
         VerificationToken verificationToken = VerificationToken.builder()
                 .user(user)
                 .token(tokenValue)
                 .expireDate(LocalDateTime.now().plusMinutes(20))
                 .build();
         tokenRepository.save(verificationToken);
+
+        // 4. Initialize the Email Context
         AccountVerificationEmailContext context = new AccountVerificationEmailContext();
         context.init(user);
+        context.setFrom(senderEmail);
+        context.setTo(user.getEmail());
         context.setToken(tokenValue);
-        context.buildVerificationUrl(baseUrl , verificationToken.getToken());
+        context.buildVerificationUrl(baseUrl, verificationToken.getToken());
 
         try {
             emailService.sendMail(context);
-        }catch (IOException e){
-            throw new RuntimeException("Registration successful ,  but email failed to send");
-
+            System.out.println("DEBUG: Email request sent to EmailService for: " + user.getEmail());
+        } catch (IOException e) {
+            // Detailed logging for Render debugging
+            System.err.println("CRITICAL ERROR: Failed to dispatch email to SendGrid for user: " + user.getEmail());
+            e.printStackTrace();
+            throw new RuntimeException("Registration successful, but verification email failed to send.");
         }
-
-
     }
-
     public void sendPasswordChangeEmail(User user){
         tokenRepository.deleteByUser(user);
         String tokenValue = new String(Base64.encodeBase64URLSafe(DEFAULT_TOKEN_GENERATOR.generateKey()));
@@ -97,6 +108,8 @@ public class UserService implements IUserService {
         PasswordResetEmailContext context = new PasswordResetEmailContext();
         context.init(user);
         context.setToken(tokenValue);
+        context.setTo(user.getEmail());
+        context.setFrom(senderEmail);
         context.buildVerificationUrl(baseUrl , verificationToken.getToken());
 
         try {
