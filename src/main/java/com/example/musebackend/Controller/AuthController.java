@@ -1,5 +1,6 @@
 package com.example.musebackend.Controller;
 
+import com.example.musebackend.Config.JwtService;
 import com.example.musebackend.Exceptions.BusinessException;
 import com.example.musebackend.Exceptions.ErrorCode;
 import com.example.musebackend.Models.User;
@@ -17,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -29,7 +32,7 @@ public class AuthController {
     private final UserService userService;
     private final UserRepository userRepository;
     private final VerificationTokenRepository tokenRepository;
-    private final EmailService emailService;
+  private final JwtService jwtService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(
@@ -168,6 +171,39 @@ public class AuthController {
         userService.sendPasswordChangeEmail(user);
 
         return ResponseEntity.ok("If an account exists for this email, a reset link has been sent.");
+    }
+
+
+    @GetMapping("/oauth2/success")
+    public ResponseEntity<?> googleLoginSuccess(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).body("Authentication failed");
+        }
+
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        String email = oAuth2User.getAttribute("email");
+        String firstName = oAuth2User.getAttribute("given_name");
+        String lastName = oAuth2User.getAttribute("family_name");
+
+        // 1. Process the user (Find or Create)
+        User user = userService.processOAuthPostLogin(email, firstName, lastName);
+
+        // 2. Generate Muse Tokens
+        String accessToken = jwtService.generateAccessToken(user.getEmail());
+        String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+
+        // 3. Return the tokens and user info
+        return ResponseEntity.ok(Map.of(
+                "accessToken", accessToken,
+                "refreshToken", refreshToken,
+                "user", Map.of(
+                            "id", user.getId(),
+                        "email", user.getEmail(),
+                        "firstName", user.getFirstname(),
+                        "role", user.getRole().name(),
+                        "isEmailVerified", user.isEnabled()
+                )
+        ));
     }
 
 

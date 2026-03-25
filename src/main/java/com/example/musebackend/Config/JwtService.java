@@ -60,6 +60,14 @@ public class JwtService {
         return buildToken(username,claims,this.refreshTokenExpiration);
 
     }
+    // Add this to your JwtService.java
+    public String generateToken(com.example.musebackend.Models.User user) {
+        final Map<String, Object> claims = Map.of(
+                TOKEN_TYPE, "ACCESS_TOKEN",
+                "role", user.getRole().name()
+        );
+        return buildToken(user.getEmail(), claims, this.accessTokenExpiration);
+    }
 
     private String buildToken(String username, Map<String, Object> claims, long expiration) {
         return Jwts.builder()

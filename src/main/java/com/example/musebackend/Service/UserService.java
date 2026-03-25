@@ -321,4 +321,26 @@ public boolean verifyOTP(String email, String code) {
     }
 
 
+    @Transactional
+    public User processOAuthPostLogin(String email, String firstName, String lastName) {
+        return userRepository.findByEmailIgnoreCase(email)
+                .orElseGet(() -> {
+                    // Create new user if they don't exist
+                    User newUser = User.builder()
+                            .email(email)
+                            .firstname(firstName != null ? firstName : "User")
+                            .lastname(lastName != null ? lastName : "")
+                            // Google doesn't provide phone, so we use a placeholder or UUID
+                            // to satisfy the @Column(nullable = false) constraint
+                            .phonenumber("OAUTH_" + java.util.UUID.randomUUID().toString().substring(0, 8))
+                            // Password cannot be null, so we set a secure random string
+                            // They will never use this password as they login via Google
+                            .password(java.util.UUID.randomUUID().toString())
+                            .emailVerified(true) // Google emails are pre-verified
+                            .role(User.Role.USER)
+                            .build();
+
+                    return userRepository.save(newUser);
+                });
+    }
 }
