@@ -38,7 +38,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
 
         // 3. Build Redirect URL for your Netlify Frontend
-        String targetUrl = UriComponentsBuilder.fromUriString("https://muse-app.netlify.app/oauth2/redirect")
+        String targetUrl = UriComponentsBuilder.fromUriString("https://muse-ic.netlify.app/oauth2/redirect")
                 .queryParam("token", accessToken)
                 .queryParam("refresh", refreshToken)
                 .queryParam("user", user.getEmail())
