@@ -1,5 +1,7 @@
 package com.example.musebackend.Service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.example.musebackend.Config.JwtService;
 import com.example.musebackend.Exceptions.BusinessException;
 import com.example.musebackend.Exceptions.ErrorCode;
@@ -9,6 +11,7 @@ import com.example.musebackend.Repository.UserRepository;
 import com.example.musebackend.Repository.VerificationTokenRepository;
 import com.example.musebackend.Request.LoginRequest;
 import com.example.musebackend.Request.RegisterRequest;
+import com.example.musebackend.Request.UpdateProfileRequest;
 import com.example.musebackend.Response.LoginResponse;
 import com.example.musebackend.Response.UserListResponse;
 import com.example.musebackend.Response.UserResponse;
@@ -22,15 +25,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.keygen.BytesKeyGenerator;
 import org.springframework.security.crypto.keygen.KeyGenerators;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.example.musebackend.Exceptions.ErrorCode.*;
@@ -49,6 +55,8 @@ public class UserService implements IUserService {
     private String baseUrl;
     @Value("${app.mail.from}")
     private String senderEmail;
+
+    private final Cloudinary cloudinary;
 
 
     private void checkUserEmail(String email) {
@@ -254,6 +262,66 @@ public Boolean deleteUser(String id){
         this.userRepository.save(user);
 
     }
+
+    @Override
+    public UserResponse getUserProfile(){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        assert authentication != null;
+        String email = authentication.getName();
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+        return UserResponse.builder()
+                .id(user.getId())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
+                .phone(user.getPhonenumber())
+                .email(user.getEmail())
+                .role(user.getRole() != null ? UserResponse.Role.valueOf(String.valueOf(user.getRole())) : UserResponse.Role.USER)
+                .isEmailVerified(user.isEmailVerified())
+                .profileImage(user.getProfileImage())
+                .build();
+    }
+    @Override
+    public UserResponse updateProfile(String id, UpdateProfileRequest request, MultipartFile file) throws IOException {
+        // 1. Fetch user or throw 404
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+
+        // 2. Update basic fields from the DTO
+        user.setFirstname(request.getFirstname());
+        user.setLastname(request.getLastname());
+        user.setPhonenumber(request.getPhonenumber());
+
+        // 3. Handle Cloudinary Upload
+        if (file != null && !file.isEmpty()) {
+            // Explicitly casting to Map for type safety
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
+                    ObjectUtils.asMap(
+                            "resource_type", "image",
+                            "folder", "muse_profiles", // Organizes files in Cloudinary
+                            "public_id", "user_" + id   // Overwrites old photo to save space
+                    ));
+
+            user.setProfileImage(uploadResult.get("secure_url").toString());
+        }
+
+        // 4. Persist changes
+        userRepository.save(user);
+
+        // 5. Build and return the Response DTO
+        return UserResponse.builder()
+                .id(user.getId())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
+                .phone(user.getPhonenumber())
+                .email(user.getEmail())
+                // Dynamic role assignment if your User entity has a role field
+                .role(user.getRole() != null ? UserResponse.Role.valueOf(String.valueOf(user.getRole())) : UserResponse.Role.USER)
+                .isEmailVerified(user.isEmailVerified())
+                .profileImage(user.getProfileImage())
+                .build();
+    }
+
 
 //    @Override
 //    public void reactivateAccount(String userId) {

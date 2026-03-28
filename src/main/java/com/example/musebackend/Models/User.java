@@ -39,7 +39,8 @@ public class User implements UserDetails {
     @Column(name = "EMAIL_VERIFIED")
     private boolean emailVerified;
 
-
+    @Column(name = "PROFILE_IMAGE")
+    private String profileImage;
     private Role role;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL , orphanRemoval = true)
