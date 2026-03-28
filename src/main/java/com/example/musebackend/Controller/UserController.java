@@ -103,6 +103,8 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         }
     }
+
+
     @PutMapping(value = "/update/profile/{id}", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<?> updateProfile(
             @PathVariable("id") String id,
@@ -127,6 +129,7 @@ public class UserController {
                     .body("Update failed: " + e.getMessage());
         }
     }
+
     public Map<String, Object> getOauthUserProfile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
