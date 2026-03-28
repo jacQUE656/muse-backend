@@ -11,11 +11,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -73,12 +78,25 @@ public class UserController {
         }
     }
     @GetMapping("/profile")
-    public ResponseEntity<?> getUserProfile() {
+    public ResponseEntity<?> getUserProfile(@AuthenticationPrincipal Object principal) {
         try {
-            UserResponse user = userService.getUserProfile();
-            // Security: Hide the password hash before sending to React
+            // 1. Check if it's an OAuth2 User
+            if (principal instanceof OAuth2User oAuth2User) {
+                UserResponse response = UserResponse.builder()
+                        .id(oAuth2User.getAttribute("sub")) // Google unique ID
+                        .firstname(oAuth2User.getAttribute("given_name"))
+                        .lastname(oAuth2User.getAttribute("family_name"))
+                        .email(oAuth2User.getAttribute("email"))
+                        .profileImage(oAuth2User.getAttribute("picture"))
+                        .role(UserResponse.Role.valueOf("LISTENER")) // Default role for OAuth
+                        .build();
+                return ResponseEntity.ok(response);
+            }
 
+            // 2. Fallback to Standard JWT/DB User logic
+            UserResponse user = userService.getUserProfile();
             return ResponseEntity.ok(user);
+
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", "User not found or session expired");
@@ -109,4 +127,15 @@ public class UserController {
                     .body("Update failed: " + e.getMessage());
         }
     }
+    public Map<String, Object> getOauthUserProfile() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication.getPrincipal() instanceof OAuth2User oAuth2User) {
+            // Attributes contains 'name', 'email', 'picture', etc.
+            return oAuth2User.getAttributes();
+        }
+
+        return Collections.emptyMap();
+    }
+
 }
